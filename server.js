@@ -95,8 +95,8 @@ app.get('/api/products', (req, res) => {
     res.json(JSON.parse(raw));
   } catch (err) {
     // if anything goes wrong, log it and reply with a 500 error
-    console.error('failed to read products.json:', err);
-    res.status(500).json({ error: 'unable to load product list' });
+    console.error('Failed to read products.json:', err);
+    res.status(500).json({ error: 'Unable to load product list' });
   }
 });
 
@@ -111,7 +111,7 @@ app.post('/api/chat', async (req, res) => {
   // 1️ - validate request – we need a message from the user
   // -----------------------------------------------------------------
   const { message, history = [] } = req.body
-  if (!message) return res.status(400).json({ error: 'message is required' })
+  if (!message) return res.status(400).json({ error: 'Message is required' })
 
   try {
     // -----------------------------------------------------------------
@@ -222,7 +222,7 @@ Answer as Chef Naza, keeping to the tone and slang described above. Recommend sp
     // -----------------------------------------------------------------
     console.error('chat error:', err.message)
     return res.status(500).json({
-      response: 'my bad, i had trouble thinking that through. please try again!',
+      response: 'My bad, I had trouble thinking that through. Please try again!',
       recommendations: [],
       error: err.message
     })
