@@ -1,617 +1,526 @@
 /*
-  script.js — Client logic for the shop page.
-  - Fetches `/api/products` and renders product cards into `#productsGrid`.
-  - Implements filtering by category, product modal details, and cart state.
-  - Handles recommendation form: POSTs form data to `/api/recommend` and updates highlights.
-  - Includes scroll-to-top button, validation, and UI toast messages.
+  script.js – client logic for the shop page
+  -------------------------------------------------
+  - fetches `/api/products` and renders product cards into #productsgrid
+  - implements category filtering, product‑modal details and cart state
+  - handles the recommendation form (POST /api/recommend) and highlights results
+  - includes scroll‑to‑top button, validation and UI toast messages
+  -------------------------------------------------
 */
 
-// -------------------------------------------------------
-// CATEGORY HELPER
-// -------------------------------------------------------
+/* -------------------------------------------------
+   category helper – works out which filter bucket a product belongs to
+   ------------------------------------------------- */
 function getCategory(product) {
-  const name = product.name.toLowerCase();
-  const categories = [];
+  const name = product.name.toLowerCase()
+  const categories = []
 
-  if (name.includes('gift') || name.includes('hamper') || name.includes('assorted')) categories.push('gifting');
-  if (name.includes('croissant') || name.includes('pain') || name.includes('brioche') || 
-      name.includes('assorted') || name.includes('pastry')) categories.push('pastry');
-  if (name.includes('focaccia') || name.includes('flatbread') || name.includes('naan') || 
-      name.includes('cornbread')) categories.push('flatbread');
-  if (name.includes('brownie') || name.includes('cookie') || name.includes('gingerbread') || 
-      name.includes('muffin')) categories.push('sweet');
-  if (categories.length === 0 || name.includes('sourdough') || name.includes('rye') || 
-      name.includes('spelt') || name.includes('multigrain') || name.includes('pumpernickel') || 
-      name.includes('loaf') || name.includes('bagel')) categories.push('sourdough');
+  if (name.includes('gift') || name.includes('hamper') || name.includes('assorted'))
+    categories.push('gifting')
+  if (
+    name.includes('croissant') ||
+    name.includes('pain') ||
+    name.includes('brioche') ||
+    name.includes('assorted') ||
+    name.includes('pastry')
+  )
+    categories.push('pastry')
+  if (name.includes('focaccia') || name.includes('flatbread') || name.includes('naan') || name.includes('cornbread'))
+    categories.push('flatbread')
+  if (name.includes('brownie') || name.includes('cookie') || name.includes('gingerbread') || name.includes('muffin'))
+    categories.push('sweet')
+  if (
+    categories.length === 0 ||
+    name.includes('sourdough') ||
+    name.includes('rye') ||
+    name.includes('spelt') ||
+    name.includes('multigrain') ||
+    name.includes('pumpernickel') ||
+    name.includes('loaf') ||
+    name.includes('bagel')
+  )
+    categories.push('sourdough')
 
-  return categories.join(' ');
+  return categories.join(' ')
 }
 
-
-// -------------------------------------------------------
-// FILTER LOGIC
-// -------------------------------------------------------
-let filtersInitialised = false; // prevent duplicate event listeners
+/* -------------------------------------------------
+   filter logic – initialise once and apply active filter
+   ------------------------------------------------- */
+let filtersInitialised = false // prevent duplicate listeners
 
 function setupFilters() {
   if (filtersInitialised) {
-    applyActiveFilter(); // just reapply filter if already set up
-    return;
+    applyActiveFilter()
+    return
   }
 
-  const buttons = document.querySelectorAll('.filter-btn');
+  const buttons = document.querySelectorAll('.filter-btn')
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      buttons.forEach(b => b.classList.remove('active')); // clear all active states
-      btn.classList.add('active'); // set clicked button as active
-      applyActiveFilter(); // update visible cards
-    });
-  });
+      buttons.forEach(b => b.classList.remove('active')) // clear all active states
+      btn.classList.add('active') // set clicked button as active
+      applyActiveFilter() // update visible cards
+    })
+  })
 
-  filtersInitialised = true; // mark as initialised
+  filtersInitialised = true
 }
 
 function applyActiveFilter() {
-  const activeBtn = document.querySelector('.filter-btn.active');
-  const filter = activeBtn ? activeBtn.dataset.filter : 'all'; // get filter type
-  const cards = document.querySelectorAll('.product-card');
+  const activeBtn = document.querySelector('.filter-btn.active')
+  const filter = activeBtn ? activeBtn.dataset.filter : 'all'
+  const cards = document.querySelectorAll('.product-card')
   cards.forEach(card => {
     if (filter === 'all' || card.dataset.category.includes(filter)) {
-      card.style.display = 'block'; // show matching cards
+      card.style.display = 'block'
     } else {
-      card.style.display = 'none'; // hide non-matching cards
+      card.style.display = 'none'
     }
-  });
+  })
 }
 
+/* -------------------------------------------------
+   load products – fetch catalogue, render grid and store data for modals
+   ------------------------------------------------- */
+let allProducts = [] // used by the product modal and cart
 
-// -------------------------------------------------------
-// LOAD PRODUCTS INTO GRID
-// -------------------------------------------------------
 async function loadProducts(highlightIds = []) {
-  const grid = document.getElementById('productsGrid');
-  if (!grid) return; // exit if grid element missing
+  const grid = document.getElementById('productsGrid')
+  if (!grid) return // safety: page without a grid (e.g. home page)
 
   try {
-    const response = await fetch('/api/products'); // fetch product data
-    const data = await response.json(); // parse json response
+    const response = await fetch('/api/products')
+    const data = await response.json()
+    allProducts = data.products // keep a copy for the modal
 
-    // build html for each product
-    grid.innerHTML = data.products.map(product => `
-    <div class="product-card ${highlightIds.includes(product.id) ? 'highlighted' : ''}" 
-        id="product-${product.id}"
-        data-category="${getCategory(product)}"
-        onclick="openProductModal(${product.id})">
-        <img src="${product.image}" alt="${product.name}" onerror="this.src='images/placeholder.jpg'">
-        <div class="card-body">
-        <div class="dietary-tags">
-            ${product.dietary.map(tag => `<span class="tag tag-${tag.replace('-', '')}">${tag}</span>`).join('')}
+    grid.innerHTML = data.products
+      .map(product => `
+        <div class="product-card ${highlightIds.includes(product.id) ? 'highlighted' : ''}"
+             id="product-${product.id}"
+             data-category="${getCategory(product)}"
+             onclick="openProductModal(${product.id})">
+          <img src="${product.image}" alt="${product.name}" onerror="this.src='images/placeholder.jpg'">
+          <div class="card-body">
+            <div class="dietary-tags">
+              ${product.dietary
+                .map(tag => `<span class="tag tag-${tag.replace('-', '')}">${tag}</span>`)
+                .join('')}
+            </div>
+            <h3>${product.name}</h3>
+            <p>${product.description}</p>
+            <div class="price">£${product.price.toFixed(2)}</div>
+          </div>
         </div>
-        <h3>${product.name}</h3>
-        <p>${product.description}</p>
-        <div class="price">£${product.price.toFixed(2)}</div>
-        </div>
-    </div>
-    `).join('');
+      `)
+      .join('')
 
-    // wire up filters after grid renders
-    setupFilters();
-
+    // initialise filter buttons now that the cards exist
+    setupFilters()
   } catch (error) {
-    console.error('Could not load products:', error); // log fetch error
-    grid.innerHTML = '<p style="color:#8a7060;">Unable to load products. Make sure the server is running.</p>'; // show error message
+    console.error('could not load products:', error)
+    grid.innerHTML =
+      '<p style="color:#8a7060;">unable to load products. make sure the server is running.</p>'
   }
 }
 
-// load products on page start
-loadProducts();
+// initial load when the page starts
+loadProducts()
 
-
-// -------------------------------------------------------
-// RECOMMENDATION FORM SUBMISSION
-// -------------------------------------------------------
-const submitBtn = document.getElementById('submitBtn');
+/* -------------------------------------------------
+   recommendation form – submit request and show results
+   ------------------------------------------------- */
+const submitBtn = document.getElementById('submitBtn')
 if (submitBtn) {
   submitBtn.addEventListener('click', async () => {
-    // disable button while processing
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Finding…';
+    // disable while we wait for the back‑end
+    submitBtn.disabled = true
+    submitBtn.textContent = 'finding…'
 
-    // collect form data
-    const freeText = document.getElementById('freeText').value.trim();
-    const dietary = Array.from(document.querySelectorAll('input[name="dietary"]:checked')).map(i => i.value);
-    const goals = Array.from(document.querySelectorAll('input[name="goals"]:checked')).map(i => i.value);
-    const occasion = document.getElementById('occasion').value;
+    // gather user input
+    const freeText = document.getElementById('freeText').value.trim()
+    const dietary = Array.from(
+      document.querySelectorAll('input[name="dietary"]:checked')
+    ).map(i => i.value)
+    const goals = Array.from(
+      document.querySelectorAll('input[name="goals"]:checked')
+    ).map(i => i.value)
+    const occasion = document.getElementById('occasion').value
 
-    // validate at least one input provided
+    // must have at least one piece of input
     if (!freeText && dietary.length === 0 && goals.length === 0 && !occasion) {
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Get Recommendations';
-    showValidationError('Please describe what you\'re looking for, or select at least one option below.');
-    return;
+      submitBtn.disabled = false
+      submitBtn.textContent = 'get recommendations'
+      showValidationError(
+        "please describe what you're looking for, or select at least one option below."
+      )
+      return
     }
 
-    // show loading, hide results
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('results').style.display = 'none';
+    // UI feedback while we wait
+    document.getElementById('loading').style.display = 'block'
+    document.getElementById('results').style.display = 'none'
 
     try {
-      // send recommendation request
       const response = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dietary, goals, occasion, freeText })
-      });
+      })
+      const data = await response.json()
+      document.getElementById('loading').style.display = 'none'
 
-      const data = await response.json();
-      document.getElementById('loading').style.display = 'none';
-
-          if (data.success && data.recommendations.length > 0) {
-        // highlight recommended products
-        const highlightIds = data.recommendations.map(r => r.id);
+      if (data.success && data.recommendations.length > 0) {
+        // highlight the recommended products in the grid
+        const highlightIds = data.recommendations.map(r => r.id)
         document.querySelectorAll('.product-card').forEach(card => {
-          const id = parseInt(card.id.replace('product-', ''), 10);
-          if (highlightIds.includes(id)) {
-            card.classList.add('highlighted');
-          } else {
-            card.classList.remove('highlighted');
-          }
-        });
+          const id = parseInt(card.id.replace('product-', ''), 10)
+          card.classList.toggle('highlighted', highlightIds.includes(id))
+        })
 
-        // show recommendation results
-        document.getElementById('recommendations').innerHTML = data.recommendations.map(product => `
-          <div class="result-card">
-            <h4>${product.name}</h4>
-            <p>${product.description}</p>
-            <div class="price">£${product.price.toFixed(2)}</div>
-            <button class="submit-btn rec-add-btn" type="button" data-id="${product.id}">Add to Cart</button>
-          </div>
-        `).join('');
-        document.getElementById('results').style.display = 'block';
+        // render the recommendation list in the side panel
+        document.getElementById('recommendations').innerHTML = data.recommendations
+          .map(product => `
+            <div class="result-card">
+              <h4>${product.name}</h4>
+              <p>${product.description}</p>
+              <div class="price">£${product.price.toFixed(2)}</div>
+              <button class="submit-btn rec-add-btn" type="button" data-id="${product.id}">
+                add to cart
+              </button>
+            </div>
+          `)
+          .join('')
+        document.getElementById('results').style.display = 'block'
 
-        // wire up recommendation 'add to cart' buttons (for dynamic elements)
+        // bind the dynamically added add‑to‑cart buttons
         document.querySelectorAll('.rec-add-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const id = parseInt(btn.dataset.id, 10);
+            const id = parseInt(btn.dataset.id, 10)
             if (!Number.isNaN(id)) {
-              addToCart(id);
-              btn.textContent = 'Added ✓';
-              btn.disabled = true;
+              addToCart(id)
+              btn.textContent = 'added ✓'
+              btn.disabled = true
               setTimeout(() => {
-                btn.textContent = 'Add to Cart';
-                btn.disabled = false;
-              }, 1200);
+                btn.textContent = 'add to cart'
+                btn.disabled = false
+              }, 1200)
             }
-          });
-        });
+          })
+        })
       } else {
-        // show no results message
+        // no matches – gentle hint
         document.getElementById('recommendations').innerHTML = `
           <p style="color:#5a4a40; font-size:13px; font-family:'Lato',sans-serif;">
-            No exact matches found. Try adjusting your preferences.
+            no exact matches found. try adjusting your preferences.
           </p>
-        `;
-        document.getElementById('results').style.display = 'block';
+        `
+        document.getElementById('results').style.display = 'block'
       }
-
     } catch (error) {
-      console.error('Error:', error);
-      document.getElementById('loading').style.display = 'none';
-      alert('Something went wrong. Make sure Ollama is running.');
+      console.error('error:', error)
+      document.getElementById('loading').style.display = 'none'
+      alert('something went wrong. make sure ollama is running.')
     } finally {
-      // re-enable button
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Get Recommendations';
+      // re‑enable button
+      submitBtn.disabled = false
+      submitBtn.textContent = 'get recommendations'
     }
-  });
+  })
 }
 
-// show temporary validation error
+// show a temporary validation error beneath the submit button
 function showValidationError(message) {
-  let error = document.getElementById('validationError');
+  let error = document.getElementById('validationError')
   if (!error) {
-    error = document.createElement('p');
-    error.id = 'validationError';
-    error.style.cssText = 'color:#c0392b; font-size:12px; font-family:Lato,sans-serif; margin-top:8px;';
-    document.getElementById('submitBtn').insertAdjacentElement('afterend', error);
+    error = document.createElement('p')
+    error.id = 'validationError'
+    error.style.cssText =
+      'color:#c0392b; font-size:12px; font-family:Lato,sans-serif; margin-top:8px;'
+    document.getElementById('submitBtn').insertAdjacentElement('afterend', error)
   }
-  error.textContent = message;
-  setTimeout(() => { error.textContent = ''; }, 4000);
+  error.textContent = message
+  setTimeout(() => {
+    error.textContent = ''
+  }, 4000)
 }
 
-
-// -------------------------------------------------------
-// FLOATING CHAT TAB + PANEL (replaces modal chat)
-// -------------------------------------------------------
+/* -------------------------------------------------
+   floating chat tab + panel (replaces modal chat)
+   ------------------------------------------------- */
 function setupFloatingChat() {
-  const chatTab    = document.getElementById('chatTab');
-  const chatPanel  = document.getElementById('chatPanel');
-  const closeBtn   = document.getElementById('closeChatPanel');
-  const sendBtn    = document.getElementById('chatPanelSend');
-  const input      = document.getElementById('chatPanelInput');
-  const messages   = document.getElementById('chatPanelMessages');
+  const chatTab = document.getElementById('chatTab')
+  const chatPanel = document.getElementById('chatPanel')
+  const closeBtn = document.getElementById('closeChatPanel')
+  const sendBtn = document.getElementById('chatPanelSend')
+  const input = document.getElementById('chatPanelInput')
+  const messages = document.getElementById('chatPanelMessages')
 
-  if (!chatTab || !chatPanel) return;
+  if (!chatTab || !chatPanel) return
 
-  // Track conversation history for context
-  let conversationHistory = [];
+  // conversation history – kept locally for context
+  let conversationHistory = []
 
-  // open panel
-  chatTab.addEventListener('click', () => {
-    chatPanel.classList.add('active');
-  });
+  // open / close panel
+  chatTab.addEventListener('click', () => chatPanel.classList.add('active'))
+  closeBtn.addEventListener('click', () => chatPanel.classList.remove('active'))
 
-  // close panel
-  closeBtn.addEventListener('click', () => {
-    chatPanel.classList.remove('active');
-  });
-
-  // helper to add a message (HTML optional)
+  // helper: add a message bubble
   function addPanelMessage(role, text, isHtml = false) {
-    const msg = document.createElement('div');
-    msg.className = `chat-message ${role}`;
-    if (isHtml) msg.innerHTML = text;
-    else msg.textContent = text;
-    messages.appendChild(msg);
-    messages.scrollTop = messages.scrollHeight;
+    const msg = document.createElement('div')
+    msg.className = `chat-message ${role}`
+    if (isHtml) msg.innerHTML = text
+    else msg.textContent = text
+    messages.appendChild(msg)
+    messages.scrollTop = messages.scrollHeight
   }
 
-  // send a chat message
+  // send a message to the back‑end
   async function sendPanelMessage() {
-    const txt = input.value.trim();
-    if (!txt) return;
+    const txt = input.value.trim()
+    if (!txt) return
 
-    // Add user message to history and display
-    addPanelMessage('user', txt);
-    conversationHistory.push({ role: 'user', text: txt });
-    input.value = '';
-    addPanelMessage('bot', 'Thinking...');
+    addPanelMessage('user', txt)
+    conversationHistory.push({ role: 'user', text: txt })
+    input.value = ''
+    addPanelMessage('bot', 'thinking...')
 
     try {
-      // Send message with full conversation history to server
       const resp = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          message: txt,
-          history: conversationHistory
-        })
-      });
-      const data = await resp.json();
+        body: JSON.stringify({ message: txt, history: conversationHistory })
+      })
+      const data = await resp.json()
 
-      // Replace "Thinking..." with bot response
-      const thinking = messages.lastElementChild;
-      if (thinking && thinking.textContent === 'Thinking...') thinking.remove();
+      // replace the placeholder
+      const thinking = messages.lastElementChild
+      if (thinking && thinking.textContent === 'thinking...') thinking.remove()
 
-      // Add bot response to history and display
-      const botText = data.response || 'I had trouble thinking that through. Please try again!';
-      addPanelMessage('bot', botText);
-      conversationHistory.push({ role: 'bot', text: botText });
+      const botText = data.response || 'i had trouble thinking that through. please try again!'
+      addPanelMessage('bot', botText)
+      conversationHistory.push({ role: 'bot', text: botText })
 
-      // Show recommendations (if any)
+      // highlight any products the bot mentioned
       if (data.recommendations && data.recommendations.length) {
-        const ids = data.recommendations.map(r => r.id);
+        const ids = data.recommendations.map(r => r.id)
         document.querySelectorAll('.product-card').forEach(card => {
-          const id = parseInt(card.id.replace('product-', ''), 10);
-          card.classList.toggle('highlighted', ids.includes(id));
-        });
+          const id = parseInt(card.id.replace('product-', ''), 10)
+          card.classList.toggle('highlighted', ids.includes(id))
+        })
 
-        const recList = data.recommendations.map(p =>
-          `<strong>${p.name}</strong> (£${p.price.toFixed(2)})`).join('<br>');
-        addPanelMessage('bot', recList, true);
+        const recList = data.recommendations
+          .map(p => `<strong>${p.name}</strong> (£${p.price.toFixed(2)})`)
+          .join('<br>')
+        addPanelMessage('bot', recList, true)
       }
     } catch (e) {
-      console.error('chat error', e);
-      const thinking = messages.lastElementChild;
-      if (thinking && thinking.textContent === 'Thinking...') thinking.remove();
-      addPanelMessage('bot', 'Oops something went wrong. Please try again later.');
+      console.error('chat error', e)
+      const thinking = messages.lastElementChild
+      if (thinking && thinking.textContent === 'thinking...') thinking.remove()
+      addPanelMessage('bot', 'oops something went wrong. please try again later.')
     }
   }
 
-  // event listeners
-  sendBtn?.addEventListener('click', sendPanelMessage);
+  // bind UI events
+  sendBtn?.addEventListener('click', sendPanelMessage)
   input?.addEventListener('keypress', e => {
     if (e.key === 'Enter') {
-      e.preventDefault();
-      sendPanelMessage();
+      e.preventDefault()
+      sendPanelMessage()
     }
-  });
+  })
 }
 
-// initialise floating chat on page load
-document.addEventListener('DOMContentLoaded', setupFloatingChat);
+// initialise the chat when the DOM is ready
+document.addEventListener('DOMContentLoaded', setupFloatingChat)
 
+/* -------------------------------------------------
+   modal open / close – product detail overlay
+   ------------------------------------------------- */
+const openModal = document.getElementById('openModal')
+const closeModal = document.getElementById('closeModal')
+const modalOverlay = document.getElementById('modalOverlay')
 
-// -------------------------------------------------------
-// MODAL OPEN / CLOSE
-// -------------------------------------------------------
-// get modal elements
-const openModal = document.getElementById('openModal');
-const closeModal = document.getElementById('closeModal');
-const modalOverlay = document.getElementById('modalOverlay');
-
-// open modal when button clicked
 if (openModal) {
-  openModal.addEventListener('click', () => {
-    modalOverlay.classList.add('active');
-  });
+  openModal.addEventListener('click', () => modalOverlay.classList.add('active'))
 }
-
-// close modal when x clicked
 if (closeModal) {
-  closeModal.addEventListener('click', () => {
-    modalOverlay.classList.remove('active');
-  });
+  closeModal.addEventListener('click', () => modalOverlay.classList.remove('active'))
 }
-
-// close modal when clicking outside
 if (modalOverlay) {
-  modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) {
-      modalOverlay.classList.remove('active');
-    }
-  });
+  modalOverlay.addEventListener('click', e => {
+    if (e.target === modalOverlay) modalOverlay.classList.remove('active')
+  })
 }
 
-
-// -------------------------------------------------------
-// BACK TO TOP BUTTON FUNCTIONALITY
-// -------------------------------------------------------
-// get back to top button
-const backToTop = document.getElementById('backToTop');
-
-// show/hide button based on scroll position
+/* -------------------------------------------------
+   back‑to‑top button
+   ------------------------------------------------- */
+const backToTop = document.getElementById('backToTop')
 window.addEventListener('scroll', () => {
-  if (window.scrollY > 400) {
-    backToTop.classList.add('visible'); // show when scrolled down
-  } else {
-    backToTop.classList.remove('visible'); // hide when at top
-  }
-});
-
-// scroll to top when clicked
+  if (window.scrollY > 400) backToTop.classList.add('visible')
+  else backToTop.classList.remove('visible')
+})
 if (backToTop) {
   backToTop.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // smooth scroll to top
-  });
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  })
 }
 
-
-// -------------------------------------------------------
-// PRODUCT MODAL
-// -------------------------------------------------------
-// store all products for modal access
-let allProducts = [];
-
-async function loadProducts(highlightIds = []) {
-  const grid = document.getElementById('productsGrid');
-  if (!grid) return;
-
-  try {
-    const response = await fetch('/api/products');
-    const data = await response.json();
-    allProducts = data.products; // save for modal use
-
-    grid.innerHTML = data.products.map(product => `
-      <div class="product-card ${highlightIds.includes(product.id) ? 'highlighted' : ''}" 
-           id="product-${product.id}"
-           data-category="${getCategory(product)}"
-           onclick="openProductModal(${product.id})">
-        <img src="${product.image}" alt="${product.name}" onerror="this.src='images/placeholder.jpg'">
-        <div class="card-body">
-          <div class="dietary-tags">
-            ${product.dietary.map(tag => `<span class="tag tag-${tag.replace('-', '')}">${tag}</span>`).join('')}
-          </div>
-          <h3>${product.name}</h3>
-          <p>${product.description}</p>
-          <div class="price">£${product.price.toFixed(2)}</div>
-        </div>
-      </div>
-    `).join('');
-
-    setupFilters();
-
-  } catch (error) {
-    console.error('Could not load products:', error);
-    grid.innerHTML = '<p style="color:#8a7060;">Unable to load products. Make sure the server is running.</p>';
-  }
-}
-
-// populate and show product modal
+/* -------------------------------------------------
+   product modal – populate dynamic content
+   ------------------------------------------------- */
 function openProductModal(id) {
-  const product = allProducts.find(p => p.id === id);
-  if (!product) return; // product not found
+  const product = allProducts.find(p => p.id === id)
+  if (!product) return
 
-  // set modal content
-  document.getElementById('pm-image').src = product.image;
-  document.getElementById('pm-image').alt = product.name;
-  document.getElementById('pm-name').textContent = product.name;
-  document.getElementById('pm-description').textContent = product.description;
-  document.getElementById('pm-price').textContent = `£${product.price.toFixed(2)}`;
-  document.getElementById('pm-add-btn').dataset.id = product.id;
+  document.getElementById('pm-image').src = product.image
+  document.getElementById('pm-image').alt = product.name
+  document.getElementById('pm-name').textContent = product.name
+  document.getElementById('pm-description').textContent = product.description
+  document.getElementById('pm-price').textContent = `£${product.price.toFixed(2)}`
+  document.getElementById('pm-add-btn').dataset.id = product.id
 
-  // render dietary tags
-  const tagsContainer = document.getElementById('pm-tags');
-  tagsContainer.innerHTML = product.dietary.map(tag =>
-    `<span class="tag tag-${tag.replace('-', '')}">${tag}</span>`
-  ).join('');
+  // dietary tags
+  document.getElementById('pm-tags').innerHTML = product.dietary
+    .map(tag => `<span class="tag tag-${tag.replace('-', '')}">${tag}</span>`)
+    .join('')
 
-  // render health goals
-  const goalsContainer = document.getElementById('pm-goals');
-  if (product.goals.length > 0) {
-    goalsContainer.innerHTML = `<span class="pm-label">Good for:</span> ${product.goals.map(g =>
-      `<span class="pm-goal">${g.replace('-', ' ')}</span>`
-    ).join('')}`;
+  // health goals
+  const goalsContainer = document.getElementById('pm-goals')
+  if (product.goals.length) {
+    goalsContainer.innerHTML = `<span class="pm-label">good for:</span> ${product.goals
+      .map(g => `<span class="pm-goal">${g.replace('-', ' ')}</span>`)
+      .join('')}`
   } else {
-    goalsContainer.innerHTML = '';
+    goalsContainer.innerHTML = ''
   }
 
-  // render occasions
-  const occasionContainer = document.getElementById('pm-occasion');
-  occasionContainer.innerHTML = `<span class="pm-label">Occasion:</span> ${product.occasion.map(o =>
-    `<span class="pm-goal">${o}</span>`
-  ).join('')}`;
+  // occasions
+  document.getElementById('pm-occasion').innerHTML = `<span class="pm-label">occasion:</span> ${product.occasion
+    .map(o => `<span class="pm-goal">${o}</span>`)
+    .join('')}`
 
-  // show modal
-  document.getElementById('productModalOverlay').classList.add('active');
+  document.getElementById('productModalOverlay').classList.add('active')
 }
 
-// hide product modal
 function closeProductModal() {
-  document.getElementById('productModalOverlay').classList.remove('active');
+  document.getElementById('productModalOverlay').classList.remove('active')
 }
 
-// close modal when clicking outside
-document.getElementById('productModalOverlay')?.addEventListener('click', (e) => {
-  if (e.target === document.getElementById('productModalOverlay')) {
-    closeProductModal();
-  }
-});
+// click outside the modal to close it
+document
+  .getElementById('productModalOverlay')
+  ?.addEventListener('click', e => {
+    if (e.target === document.getElementById('productModalOverlay')) closeProductModal()
+  })
 
-
-// -------------------------------------------------------
-// CART
-// -------------------------------------------------------
-let cart = [];
+/* -------------------------------------------------
+   cart handling
+   ------------------------------------------------- */
+let cart = []
 
 function addToCart(id) {
-  // find product by id
-  const product = allProducts.find(p => p.id === id);
-  // exit if not found
-  if (!product) return;
-  // check if already in cart
-  const existing = cart.find(item => item.id === id);
-  if (existing) {
-    // increase quantity
-    existing.qty += 1;
-  } else {
-    // add new item
-    cart.push({ ...product, qty: 1 });
-  }
-  // update cart badge
-  updateCartCount();
-  // close product modal
-  closeProductModal();
-  // show success message
-  showCartToast(`${product.name} added to cart`);
+  const product = allProducts.find(p => p.id === id)
+  if (!product) return
+
+  const existing = cart.find(item => item.id === id)
+  if (existing) existing.qty += 1
+  else cart.push({ ...product, qty: 1 })
+
+  updateCartCount()
+  closeProductModal()
+  showCartToast(`${product.name} added to cart`)
 }
 
 function updateCartCount() {
-  // sum all quantities
-  const total = cart.reduce((sum, item) => sum + item.qty, 0);
-  // get cart badge element
-  const badge = document.getElementById('cartCount');
+  const total = cart.reduce((sum, item) => sum + item.qty, 0)
+  const badge = document.getElementById('cartCount')
   if (badge) {
-    // set badge text
-    badge.textContent = total;
-    // show/hide badge
-    badge.style.display = total > 0 ? 'flex' : 'none';
+    badge.textContent = total
+    badge.style.display = total > 0 ? 'flex' : 'none'
   }
 }
 
 function showCartToast(message) {
-  // get toast element
-  const toast = document.getElementById('cartToast');
-  // exit if not found
-  if (!toast) return;
-  // set message text
-  toast.textContent = message;
-  // show toast
-  toast.classList.add('visible');
-  // hide after 3 seconds
-  setTimeout(() => toast.classList.remove('visible'), 3000);
+  const toast = document.getElementById('cartToast')
+  if (!toast) return
+  toast.textContent = message
+  toast.classList.add('visible')
+  setTimeout(() => toast.classList.remove('visible'), 3000)
 }
 
-
-// -------------------------------------------------------
-// CART PANEL TOGGLE
-// -------------------------------------------------------
+/* -------------------------------------------------
+   cart side‑panel toggle
+   ------------------------------------------------- */
 function toggleCart() {
-  // get panel and overlay elements
-  const panel = document.getElementById('cartPanel');
-  const overlay = document.getElementById('cartOverlay');
-  // toggle visibility classes
-  if (panel) panel.classList.toggle('active');
-  if (overlay) overlay.classList.toggle('active');
-  // refresh panel content
-  updateCartPanel();
+  const panel = document.getElementById('cartPanel')
+  const overlay = document.getElementById('cartOverlay')
+  if (panel) panel.classList.toggle('active')
+  if (overlay) overlay.classList.toggle('active')
+  updateCartPanel()
 }
-
 function closeCart() {
-  // get panel and overlay elements
-  const panel = document.getElementById('cartPanel');
-  const overlay = document.getElementById('cartOverlay');
-  // hide panel and overlay
-  if (panel) panel.classList.remove('active');
-  if (overlay) overlay.classList.remove('active');
+  const panel = document.getElementById('cartPanel')
+  const overlay = document.getElementById('cartOverlay')
+  if (panel) panel.classList.remove('active')
+  if (overlay) overlay.classList.remove('active')
 }
 
+/* -------------------------------------------------
+   cart panel UI – render items, totals, removal, qty changes
+   ------------------------------------------------- */
 function updateCartPanel() {
-  // get container and footer elements
-  const container = document.getElementById('cartItems');
-  const footer = document.getElementById('cartFooter');
-  
-  // exit if elements missing
-  if (!container || !footer) return;
+  const container = document.getElementById('cartItems')
+  const footer = document.getElementById('cartFooter')
+  if (!container || !footer) return
 
-  // show empty message if no items
   if (cart.length === 0) {
-    container.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
-    footer.style.display = 'none';
-    return;
+    container.innerHTML = '<p class="cart-empty">Your cart is empty.</p>'
+    footer.style.display = 'none'
+    return
   }
 
-  // show footer
-  footer.style.display = 'block';
-
-  // render cart items html
-  container.innerHTML = cart.map(item => `
-    <div class="cart-item">
-      <img src="${item.image}" alt="${item.name}" onerror="this.src='images/placeholder.jpg'">
-      <div class="cart-item-info">
-        <h4>${item.name}</h4>
-        <p>£${item.price.toFixed(2)} each</p>
-        <div class="cart-item-qty">
-          <button onclick="updateQty(${item.id}, -1)">−</button>
-          <span>${item.qty}</span>
-          <button onclick="updateQty(${item.id}, 1)">+</button>
+  footer.style.display = 'block'
+  container.innerHTML = cart
+    .map(item => `
+      <div class="cart-item">
+        <img src="${item.image}" alt="${item.name}" onerror="this.src='images/placeholder.jpg'">
+        <div class="cart-item-info">
+          <h4>${item.name}</h4>
+          <p>£${item.price.toFixed(2)} each</p>
+          <div class="cart-item-qty">
+            <button onclick="updateQty(${item.id}, -1)">−</button>
+            <span>${item.qty}</span>
+            <button onclick="updateQty(${item.id}, 1)">+</button>
+          </div>
+        </div>
+        <div class="cart-item-right">
+          <span class="cart-item-total">£${(item.price * item.qty).toFixed(2)}</span>
+          <button class="cart-item-remove" onclick="removeFromCart(${item.id})">✕</button>
         </div>
       </div>
-      <div class="cart-item-right">
-        <span class="cart-item-total">£${(item.price * item.qty).toFixed(2)}</span>
-        <button class="cart-item-remove" onclick="removeFromCart(${item.id})">✕</button>
-      </div>
-    </div>
-  `).join('');
+    `)
+    .join('')
 
-  // calculate total price
-  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  // update total display
-  document.getElementById('cartTotal').textContent = `£${total.toFixed(2)}`;
+  const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0)
+  document.getElementById('cartTotal').textContent = `£${total.toFixed(2)}`
 }
 
 function removeFromCart(id) {
-  // remove item from cart array
-  cart = cart.filter(item => item.id !== id);
-  // update badge count
-  updateCartCount();
-  // refresh panel display
-  updateCartPanel();
+  cart = cart.filter(item => item.id !== id)
+  updateCartCount()
+  updateCartPanel()
 }
-
 function updateQty(id, change) {
-  // find cart item
-  const item = cart.find(i => i.id === id);
-  // exit if not found
-  if (!item) return;
-  // change quantity
-  item.qty += change;
-  // remove if quantity zero or less
+  const item = cart.find(i => i.id === id)
+  if (!item) return
+  item.qty += change
   if (item.qty <= 0) {
-    removeFromCart(id);
-    return;
+    removeFromCart(id)
+    return
   }
-  // update badge and panel
-  updateCartCount();
-  updateCartPanel();
+  updateCartCount()
+  updateCartPanel()
 }

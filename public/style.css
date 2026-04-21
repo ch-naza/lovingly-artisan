@@ -1,8 +1,14 @@
 /*
-  style.css — Visual styles for Lovingly Artisan website.
-  - Global typography, color and layout rules for the site.
-  - Includes layout for navigation, hero, tagline banner, about, subscription, features, shop page, product grid, recommendation sidebar, forms, loading/results UI, floating button, modals, dietary tags, shop header, footer, category filters, back-to-top, scroll animations, product modal, cart components, and responsive breakpoints.
+  style.css – visual styles for lovingly artisan website
+  ----------------------------------------------------
+  - global typography, colour and layout rules
+  - navigation, hero, tagline banner, about, subscription, features
+  - shop page: product grid, category filters, recommendation sidebar, forms,
+    loading / results UI, floating button, modals, dietary tags
+  - product modal, cart components, back‑to‑top button, scroll animations
+  - responsive breakpoints for desktop, tablet and mobile
 */
+
 
 * {
   margin: 0;

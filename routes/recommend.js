@@ -1,14 +1,12 @@
-/* routes/recommend.js -------------------------------------------------
-   Product recommendation endpoint for Lovingly Artisan.
-
-   - exposes POST /api/recommend
-   - accepts form fields: dietary (array), goals (array), occasion (string), freeText (string)
-   - uses optional Ollama NLP to extract structured preferences from natural language
-   - merges and dedupes form + ai preferences
-   - reads product catalog from data/products.json (async)
-   - scores items by dietary (x3), goals (x2), occasion (x1)
-   - returns top 3 scored products
--------------------------------------------------------------------- */
+/* -------------------------------------------------
+   recommend.js – recommendation endpoint for Lovingly Artisan
+   -------------------------------------------------
+   POST /api/recommend
+   - receives: dietary[], goals[], occasion (string), freeText (string)
+   - tries a fast keyword search → falls back to Ollama extraction
+   - merges form + AI data, scores with dietary ×3, goals ×2, occasion ×1
+   - returns the top‑3 products (or an empty list on error)
+------------------------------------------------- */
 
 // core modules
 const fs = require('fs');
