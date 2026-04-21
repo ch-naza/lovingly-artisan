@@ -1,0 +1,265 @@
+<!--
+  shop.html — Shop page for the website.
+  - Provides a product grid (injected by `script.js`) and a recommendation form.
+  - Contains form inputs that POST to `/api/recommend` to get recommendations.
+  - Includes `script.js` to load products and handle the recommendation workflow.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shop — Lovingly Artisan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <a href="index.html" class="logo">Lovingly Artisan</a>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="shop.html" class="active">Shop</a></li>
+    </ul>
+    <div class="cart-icon" onclick="toggleCart()">
+      <span class="cart-bag">🛍</span>
+      <span class="cart-count" id="cartCount" style="display:none;">0</span>
+    </div>
+  </nav>
+
+  <!-- SHOP HEADER -->
+  <section class="shop-header">
+    <div class="shop-header-content">
+        <h1>Our Breads & Bakes</h1>
+        <p>Handcrafted fresh every morning in Cumbria. Browse our full range or use our recommendation tool to find the perfect match.</p>
+    </div>
+  </section>
+
+  <!-- MAIN CONTAINER -->
+  <div class="shop-container">
+
+    <!-- CATEGORY FILTER -->
+    <div class="category-filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="sourdough">Sourdough</button>
+      <button class="filter-btn" data-filter="pastry">Pastries</button>
+      <button class="filter-btn" data-filter="flatbread">Flatbreads</button>
+      <button class="filter-btn" data-filter="sweet">Sweet Bakes</button>
+      <button class="filter-btn" data-filter="gifting">Gifting</button>
+    </div>
+
+    <section class="products-section">
+      <div class="products-grid" id="productsGrid">
+        <!-- javascript injects the product cards here -->
+      </div>
+    </section>
+
+  </div>
+
+  <!-- FLOATING RECOMMENDATION BUTTON -->
+  <button class="find-bread-btn" id="openModal">
+    ✦ Find My Bread
+  </button>
+
+  <!-- RECOMMENDATION MODAL OVERLAY -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <button class="modal-close" id="closeModal">✕</button>
+
+      <div class="modal-content">
+        <h2>Find Your Perfect Loaf</h2>
+        <p class="subtitle">Not sure where to start? Tell us what you need and we'll point you in the right direction.</p>
+
+        <!-- ----- FREE‑TEXT ----- -->
+        <div class="form-group">
+          <label for="freeText">Describe what you're looking for</label>
+          <input type="text" id="freeText" placeholder="e.g. something light for breakfast">
+          <small>Optional – our AI will interpret this.</small>
+        </div>
+
+        <!-- Dietary requirements -->
+          <div class="form-group">
+            <label>Dietary requirements</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="dietary" value="vegan"> Vegan
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="dietary" value="vegetarian"> Vegetarian
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="dietary" value="gluten-free"> Gluten-Free
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="dietary" value="nut-free"> Nut-Free
+                </label>
+            </div>
+          </div>
+
+          <!-- Health goals -->
+          <div class="form-group">
+            <label>Health goals</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" name="goals" value="weight-gain"> Weight Gain
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="goals" value="weight-loss"> Weight Loss
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="goals" value="energy"> Energy
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="goals" value="muscle-building"> Muscle Building
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" name="goals" value="general-health"> General Health
+                </label>
+            </div>
+          </div>
+
+        <!-- ----- Occasion ----- -->
+        <div class="form-group">
+          <label for="occasion">Occasion</label>
+          <select id="occasion">
+            <option value="">No preference</option>
+            <option value="daily">Daily Eating</option>
+            <option value="entertaining">Entertaining</option>
+            <option value="gifting">Gifting</option>
+            <option value="catering">Catering</option>
+          </select>
+        </div>
+
+        <button class="submit-btn" id="submitBtn">Get Recommendations</button>
+
+        <!-- Loading spinner -->
+        <div id="loading" class="loading" style="display:none;">
+          Finding your bread…
+        </div>
+
+        <!-- Results -->
+        <div id="results" style="display:none;">
+          <h3>We recommend:</h3>
+          <div id="recommendations"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- PRODUCT MODAL -->
+  <div class="modal-overlay" id="productModalOverlay">
+    <div class="modal product-modal">
+        <button class="modal-close" onclick="closeProductModal()">✕</button>
+        <div class="pm-layout">
+          <div class="pm-image-wrap">
+              <img id="pm-image" src="" alt="">
+          </div>
+          <div class="pm-details">
+              <div class="dietary-tags" id="pm-tags"></div>
+              <h2 id="pm-name"></h2>
+              <p id="pm-description"></p>
+              <div class="pm-meta" id="pm-goals"></div>
+              <div class="pm-meta" id="pm-occasion"></div>
+              <div class="pm-footer">
+              <span class="pm-price" id="pm-price"></span>
+              <button class="submit-btn pm-add-btn" id="pm-add-btn" onclick="addToCart(parseInt(this.dataset.id))">
+              Add to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+    </div>
+  </div>
+
+  <!-- CART TOAST – small temporary message shown when adding/removing items from cart -->
+  <div class="cart-toast" id="cartToast"></div>
+
+  <!-- CART SIDE PANEL -->
+  <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+  <div class="cart-panel" id="cartPanel">
+  <div class="cart-panel-header">
+      <h2>Your Cart</h2>
+      <button class="cart-panel-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-panel-items" id="cartItems">
+        <p class="cart-empty">Your cart is empty.</p>
+  </div>
+    <div class="cart-panel-footer" id="cartFooter" style="display:none;">
+        <div class="cart-total">
+          <span>Total</span>
+          <span id="cartTotal">£0.00</span>
+        </div>
+        <button class="submit-btn" onclick="showCartToast('cmon this aint a real shop....')">
+        Checkout
+        </button>
+        <p class="cart-disclaimer">This is a student project. No real orders will be placed :) !!</p>
+    </div>
+  </div>
+
+  <!-- FLOATING CHAT TAB -->
+  <div class="chat-tab" id="chatTab">
+    <div class="chat-tab-content">
+      <span class="chat-tab-icon">💬</span>
+      <span>CHAT</span>
+    </div>
+  </div>
+
+  <!-- Chat Widget Panel -->
+  <div class="chat-widget-panel" id="chatPanel">
+    <div class="chat-panel-header">
+      <span>CHEF NAZA</span>
+      <button id="closeChatPanel">×</button>
+    </div>
+    <div class="chat-panel-messages" id="chatPanelMessages">
+      <div class="chat-message bot">Hi there! I'm Chef Naza. Tell me what kind of bread you're looking for and I'll help you find the perfect match :)</div>
+    </div>
+    <div class="chat-panel-input">
+      <input type="text" id="chatPanelInput" placeholder="e.g. something sweet for gifting" />
+      <button id="chatPanelSend">Send</button>
+    </div>
+  </div>
+
+  <!-- BACK TO TOP BUTTON -->
+  <button class="back-to-top" id="backToTop">↑</button>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+        <p class="footer-logo">Lovingly Artisan</p>
+        <p class="footer-tagline">Real bread for real life.</p>
+        <p class="footer-copy">&copy; 2026 Lovingly Artisan. This is a prototype inspired by the real Lovingly Artisan bakery, built by Chinaza Asiegbu as part of the MSci Computer Science dissertation at Lancaster University.</p>
+    </div>
+  </footer>
+
+  <script>
+    // create observer for fade-in animations.
+    // when ~10% visible, callback runs.
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // if element is visible on screen,
+            if (entry.isIntersecting) {
+                // show it with CSS class.
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    // watch all .fade-in elements.
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // make helper functions accessible globally.
+    window.toggleCart = toggleCart;
+    window.closeCart = closeCart;
+    window.addToCart = addToCart;
+    window.removeFromCart = removeFromCart;
+    window.updateQty = updateQty;
+    window.openProductModal = openProductModal;
+    window.closeProductModal = closeProductModal;
+  </script>
+
+</body>
+</html>

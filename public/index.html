@@ -1,0 +1,120 @@
+<!--
+  index.html — Homepage for the website.
+  - Includes the hero section, about content, features and a subscription button.
+  - Links to `style.css` and Google fonts; navigates to `shop.html` for shopping.
+  - Static HTML that relies on `public/style.css` for layout and design.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lovingly Artisan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav>
+    <a href="index.html" class="logo">Lovingly Artisan</a>
+    <ul>
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="shop.html">Shop</a></li>
+    </ul>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Bread Baked With Purpose</h1>
+      <p>Slow fermentation sourdough crafted from sustainably sourced grains. Baked fresh in Cumbria.</p>
+      <a href="shop.html" class="hero-btn">Find Your Bread</a>
+    </div>
+  </section>
+
+  <!-- Tagline Banner -->
+  <section class="tagline-banner fade-in">
+    <h2>Sourced. Eaten. Crafted.</h2>
+    <p>Born from a need to eat and enjoy real bread, we use natural ingredients to make and bake true bread — the best it can be for people who share our love of real food. We stand by our three commitments...</p>
+    <ul class="commitments">
+      <li>natural ingredients</li>
+      <li>made with love</li>
+      <li>shared with folk who care</li>
+    </ul>
+  </section>
+
+  <!-- About -->
+  <section class="about fade-in">
+    <div class="about-image"></div>
+    <div class="about-content">
+      <h2>Who We Are</h2>
+      <p>
+        Lovingly Artisan is an award-winning bakery based in Cumbria, committed to the craft of traditional 
+        bread making. Every loaf is made using slow fermentation techniques, quality local ingredients, 
+        and a genuine care for the people who eat it. We bake for daily life, for celebrations, for gifting 
+        and for anyone who believes good bread is worth taking seriously.
+      </p>
+    </div>
+  </section>
+
+  <!-- Subscription -->
+  <section class="subscription fade-in">
+    <div class="subscription-content">
+      <h2>Sourdough on Subscription</h2>
+      <p>
+        Never be without good bread. With our weekly, fortnightly or monthly subscriptions, you can look 
+        forward to regular deliveries of your favourite loaves, pastries and bread boxes. A bread subscription 
+        makes a brilliant present for a friend or family member — especially young offspring who may be setting 
+        up home for the first time. Simply click the subscription option next to the bread or breads of your 
+        choice and let us know where and how often you'd like to receive them.
+      </p>
+      <a href="shop.html" class="subscription-btn">Shop Online</a>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features fade-in">
+    <div class="feature">
+      <h3>Slow Fermentation</h3>
+      <p>Every loaf is given the time it deserves. No shortcuts, no additives.</p>
+    </div>
+    <div class="feature">
+      <h3>Local Ingredients</h3>
+      <p>We source our grains from trusted local farmers across Cumbria and the North.</p>
+    </div>
+    <div class="feature">
+      <h3>Baked Fresh Daily</h3>
+      <p>Our bread is baked fresh every morning and available in store and online.</p>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-content">
+        <p class="footer-logo">Lovingly Artisan</p>
+        <p class="footer-tagline">Real bread for real life.</p>
+        <p class="footer-copy">&copy; 2026 Lovingly Artisan. This is a prototype inspired by the real Lovingly Artisan bakery, built by Chinaza Asiegbu as part of the MSci Computer Science dissertation at Lancaster University.</p>
+    </div>
+  </footer>
+
+  <script>
+    // observe elements when ~10% visible.
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // add 'visible' when in view.
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    // start observing .fade-in elements.
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  </script>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
